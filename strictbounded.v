@@ -14,6 +14,9 @@ And we also have the following properties:
 Definition Markovs_Principle:= forall P, DecidableP nat P ->  (({n: nat| P n} -> False)-> False) -> {n: nat| P n}. 
 Definition WLPO := forall g:nat->bool, {forall n,g n=false} + {not (forall n,g n=false)}.
 
+StrictlyBounded also have an equivalent formulation, proven equivalent below:
+Definition StrictlyBoundedAlternative := {n | ((forall k, NrOfTrue k <= n) /\
+                                        (not ((forall k, NrOfTrue k < n))))}.
 
 It is straightforward to see that we have: Eaf->StrictlyBounded->Bounded
  
