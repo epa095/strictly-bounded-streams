@@ -21,7 +21,7 @@ In this file we prove the following:
 (StrictlyBounded->Eaf) <-> Markovs_principle
 (Bounded->StrictlyBounded) <-> WLPO.
 
-These are shown as Theorem, everything else is lemma.
+Only the important results are prefixed with Theorem, all the helpers are prefixed with Lemma.
  *)
 
   Definition WLPO := forall g:nat->bool, {forall n,g n=false} + {not (forall n,g n=false)}.
@@ -143,7 +143,7 @@ These are shown as Theorem, everything else is lemma.
                                     (forall np, (np< n) -> (not ((forall k, NrOfTrue k <= np) ))))}.
 
   
-  Definition StrictlyBoundedPred := {n | ((forall k, NrOfTrue k <= n) /\
+  Definition StrictlyBoundedAlternative := {n | ((forall k, NrOfTrue k <= n) /\
                                         (not ((forall k, NrOfTrue k < n))))}.
 
   (* Sigma n. all k. #{i | 0 <= i <= k & f(i)=1} <= n *)
@@ -209,11 +209,11 @@ These are shown as Theorem, everything else is lemma.
   Hint Resolve   NrOfTrueIsMonotoneConverse.
     
   
-  Lemma StrictlyBoundedSTBPredEQ: (StrictlyBounded -> StrictlyBoundedPred) * (StrictlyBoundedPred -> StrictlyBounded).
+  Theorem StrictlyBoundedSTBPredEQ: (StrictlyBounded -> StrictlyBoundedAlternative) * (StrictlyBoundedAlternative -> StrictlyBounded).
   Proof.
     split;intros H.
     unfold StrictlyBounded in H.
-    unfold StrictlyBoundedPred.
+    unfold StrictlyBoundedAlternative.
     elim H;intros x p.
     pose (zerop x).
     inversion s.
@@ -232,8 +232,8 @@ These are shown as Theorem, everything else is lemma.
     intro.
     pose (H3 k).
     omega.
-    (* Done with (StrictlyBounded -> StrictlyBoundedPred) *)
-    unfold StrictlyBoundedPred in H.
+    (* Done with (StrictlyBounded -> StrictlyBoundedAlternative) *)
+    unfold StrictlyBoundedAlternative in H.
     unfold StrictlyBounded.
     elim H;intros x p.
     elim p;intros H0 H1.
@@ -263,7 +263,7 @@ These are shown as Theorem, everything else is lemma.
      Then we let the index be that number + 1, and we need to show that every element of f after this is false. This is proved by induction, and the fact that NrOfTrue is monotone.
       
      *)
-  Lemma MarkovsPAndSTBImplEaf:  Markovs_Principle -> (StrictlyBounded -> Eaf).
+  Lemma MarkovsPAndSTBImplEaf:  Markovs_Principle -> (StrictlyBoundedAlternative -> Eaf).
   Proof.
     intro mp.
     intro sd.
@@ -289,31 +289,6 @@ These are shown as Theorem, everything else is lemma.
     assert (NrOfTrue n <= x);auto.
     assert (NrOfTrue n <> x);auto.
     omega.
-    assert (x=0\/ exists p,S(p)=x).
-    induction x;auto with arith.
-    right.
-    exists ( x).
-    auto.
-    elim H2.
-    intro.
-    rewrite H3 in H1.
-    assert (NrOfTrue 0 < 0);auto. (* Contradiction *)
-    omega.
-    intro.
-    elim H3.
-    intros.
-    assert (x0 < x);auto.
-    
-    rewrite<- H4.
-    auto.
-    assert (~ (forall k : nat, NrOfTrue k <= x0));auto.
-    assert (forall n : nat, NrOfTrue n <= x0).
-    intro.
-    assert (NrOfTrue n < x);auto.
-    
-    omega.      
-    auto.
-
   
     elim H.
     intros x0 p0.
@@ -378,7 +353,7 @@ These are shown as Theorem, everything else is lemma.
     assert (NrOfTrue x0 < NrOfTrue m);auto.
     omega.
     firstorder.
-  Qed.  
+   Qed.  
 
   End notionsOfFiniteness.
 
@@ -513,10 +488,6 @@ Lemma NrOfTrueWithConstantNegFunction (trues lim:nat )(f : nat-> bool) :  ((NrOf
       rewrite H3.
       auto.
     Qed.
-
-
-    (* Definition trueOnFirst (g:nat-> bool) (n:nat):  (bool):= *)
-    (*   if (inBoundedRangeDecidableStrict g n true ) then (g n) else false. *)
       
 
 Fixpoint trueOnFirst (g:nat-> bool) (n:nat):  (bool):=
@@ -719,11 +690,11 @@ Proof.
 Qed.  
 
 
-Theorem EafAndSTBImplMarkovsP (arrow: forall f,  StrictlyBounded f -> Eaf f) : Markovs_Principle.
+Theorem EafAndSTBImplMarkovsP (arrow: forall f,  StrictlyBoundedAlternative f -> Eaf f) : Markovs_Principle.
     Proof.
       apply MPImplMarkPrinciple;auto.
       unfold MP.
-      unfold StrictlyBounded in arrow.
+      unfold StrictlyBoundedAlternative in arrow.
       unfold Eaf in arrow.
       intros.
       assert ( ~ (forall n : nat, not (g n = true)));auto.
@@ -736,28 +707,28 @@ Theorem EafAndSTBImplMarkovsP (arrow: forall f,  StrictlyBounded f -> Eaf f) : M
       rewrite H2.
       congruence.
 
+      (* NEW: *)
       assert {n : nat | forall m : nat, m >= n -> (trueOnFirst g) m = false};auto.
       apply arrow;auto.
       exists 1;intros;auto.
       split;intros;auto.
       apply (nrOftrueIntrueOnFirstIs1or0).
-      assert (np =0);auto.
-      omega.
-      rewrite H3.
       intro.
       assert (forall k : nat, NrOfTrue (trueOnFirst g) k = 0);intros;auto.
-      assert (NrOfTrue (trueOnFirst g) k <= 0);auto.
+      pose (H2 k).
       omega.
-      assert (forall k, (forall x : nat, x <= k -> (trueOnFirst g) x = false));auto.
+      pose (nrOftrueIntrueIsLimitedByfalse (trueOnFirst g)).
+      assert ( forall k : nat, (forall x : nat, x <= k -> trueOnFirst g x = false) );auto.
       intro.
-      apply nrOftrueIntrueIsLimitedByfalse;auto.
-      assert (forall x, g x = false);auto.
-      apply trueOnFirstConstantFalseImplConstantFalse;auto.
+      apply i;auto.
+      pose (trueOnFirstConstantFalseImplConstantFalse g ).
+      apply H1.
+      apply e;auto.
       intro.
-      assert (forall y : nat, y <= x -> trueOnFirst g y = false);auto.
-      apply H6.
-      
-            
+      apply (H4 x x).
+      auto.
+
+
       
       elim H2.
       intro limit.
@@ -798,16 +769,19 @@ Theorem EafAndSTBImplMarkovsP (arrow: forall f,  StrictlyBounded f -> Eaf f) : M
     
 Theorem MarkovsPAndSTBImplEafOuter:  Markovs_Principle ->forall f:nat->bool,  (StrictlyBounded f) -> (Eaf f).
   intros M f.
+  intro.
   apply (MarkovsPAndSTBImplEaf f M).
+  apply StrictlyBoundedSTBPredEQ.
+  auto.
 Qed.
 
 
-Lemma WLPOImplBoundedImplSTBPred:  WLPO -> (forall f:nat->bool,  (Bounded f) -> (StrictlyBoundedPred f)).
+Lemma WLPOImplBoundedImplSTBPred:  WLPO -> (forall f:nat->bool,  (Bounded f) -> (StrictlyBoundedAlternative f)).
 Proof.
   intros.
   unfold WLPO in H.
   unfold Bounded in H0.
-  unfold StrictlyBoundedPred.
+  unfold StrictlyBoundedAlternative.
   elim H0.
   intro upperlimit.
   intro H1.
@@ -828,36 +802,37 @@ Proof.
   assert(Compare_dec.leb (NrOfTrue f n) pl = true);auto.
   apply leb_complete;auto.
 
-  set (fixer:=(fun pl k=>  (Compare_dec.leb (NrOfTrue f k) pl))).
+  set (B:=(fun pl k=>  (Compare_dec.leb (NrOfTrue f k) pl))).
   (* Lets try 0 first. *)
     
   assert ((forall k : nat, NrOfTrue f k <= 0) +
           ~ (forall k : nat, NrOfTrue f k <=  0));auto.
   
-  elim (H2 (fixer 0));auto;intros.
+  elim (H2 (B 0));auto;intros.
   left;auto.
   intro.
-  assert (fixer 0 k = true);auto.
-  unfold fixer in H4.
+  assert (B 0 k = true);auto.
+  unfold B in H4.
   apply H3;auto.
   right.
   unfold not in b.
   unfold not.
-  unfold fixer in b.
+  unfold B in b.
   intro.
   apply b.
   intros.
   assert (NrOfTrue f n <= 0);auto.
-  apply H3;auto.
-  
+  apply H3;auto. 
   elim H4.
   intro.
+  (*0 is our strict bound if 0 is a bound  *)
   exists 0;auto.
   split;auto.
   intro.
   pose (H5 1).
   omega.
-  
+
+  (* We are not in the zero case *)
   intro notZero.
   clear H4.
 
@@ -867,11 +842,11 @@ Proof.
 
   apply FindingSmallestInBoundedRangePred.
   intros pl.
-  elim (H2 (fixer pl));auto;intros.
+  elim (H2 (B pl));auto;intros.
   left;auto.
   intro.
-  assert (fixer pl k = true);auto.
-  unfold fixer in H4.
+  assert (B pl k = true);auto.
+  unfold B in H4.
   apply H3;auto.
   right.
   unfold not in b.
@@ -879,7 +854,7 @@ Proof.
   intro.
   apply b.
   intro.
-  unfold fixer.
+  unfold B.
   assert (NrOfTrue f n <= pl);auto.
   apply H3;auto.
   exists upperlimit.
@@ -907,7 +882,8 @@ Proof.
   apply WLPOImplBoundedImplSTBPred;auto.
 Qed.
     
-Theorem BoundedImplSTBImplWLPO:  (forall f:nat->bool,  (Bounded f) -> (StrictlyBounded f)) -> WLPO.
+
+Theorem BoundedImplSTBImplWLPO:  (forall f:nat->bool,  (Bounded f) -> (StrictlyBoundedAlternative f)) -> WLPO.
 Proof.
   intro arrow.
   unfold Bounded in arrow.
@@ -924,8 +900,7 @@ intro g.
 
 assert {n : nat |
             (forall k : nat, NrOfTrue (trueOnFirst g) k <= n) /\
-            (forall np : nat,
-               np < n -> ~ (forall k : nat, NrOfTrue (trueOnFirst g) k <= np))};auto.
+             ~ (forall k : nat, NrOfTrue (trueOnFirst g) k < n)};auto.
 
 apply arrow;auto.
 exists 1;auto.
@@ -947,10 +922,11 @@ elim (le_lt_dec lim 1).
 intros.
 auto.
 intro.
-assert ( ~ (forall k : nat, NrOfTrue (trueOnFirst g) k <= 1)).
-apply H3.
-auto.
-contradiction.
+contradict H3.
+intro.
+pose (H4 k).
+omega.
+
 
 elim (lt_eq_lt_dec lim 1 );auto;intros;auto.
 elim a;intros;auto.
@@ -967,6 +943,8 @@ omega.
 assert ((forall x : nat, x <= n -> trueOnFirst g x = false) );auto.
 apply nrOftrueIntrueIsLimitedByfalse;auto.
 apply (trueOnFirstConstantFalseImplConstantFalseHelper g n);auto.
+(* Done the case where the limit is 0! *)
+
 right.
 intro.
 assert (forall k, NrOfTrue  g k=0).
@@ -975,11 +953,14 @@ apply (nrOftrueIntrueIsLimitedByfalse g).
 intros.
 apply H5.
 assert (~ (forall k : nat, NrOfTrue (trueOnFirst g) k <= 0));auto.
+intro.
 apply H3.
+rewrite b.
+intro.
+pose (H7 k).
 omega.
 apply H7.
 intro.
-
 assert ( forall x : nat,   trueOnFirst g x = false);auto.
 intro.
 assert (g x = false);auto.
@@ -997,4 +978,4 @@ omega.
 assert False.
 omega.
 contradict H5.
-Qed.
+ Qed.
