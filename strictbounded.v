@@ -138,11 +138,13 @@ These are shown as Theorem, everything else is lemma.
 
   Definition Eaf := {n | forall m, m>=n -> f m = false}.
   
+  (* Two equivalent versions of strictly bounded (proven equivalent below in "StrictlyBoundedSTBPredEQ") *)
   Definition StrictlyBounded := {n | ((forall k, NrOfTrue k <= n) /\
                                     (forall np, (np< n) -> (not ((forall k, NrOfTrue k <= np) ))))}.
 
+  
   Definition StrictlyBoundedPred := {n | ((forall k, NrOfTrue k <= n) /\
-                                        (n<>0-> (not ((forall k, NrOfTrue k <= pred(n))))))}.
+                                        (not ((forall k, NrOfTrue k < n))))}.
 
   (* Sigma n. all k. #{i | 0 <= i <= k & f(i)=1} <= n *)
   Definition Bounded := {n| ((forall k, NrOfTrue k <= n))}.
@@ -209,31 +211,44 @@ These are shown as Theorem, everything else is lemma.
   
   Lemma StrictlyBoundedSTBPredEQ: (StrictlyBounded -> StrictlyBoundedPred) * (StrictlyBoundedPred -> StrictlyBounded).
   Proof.
-    split;intros.
+    split;intros H.
     unfold StrictlyBounded in H.
     unfold StrictlyBoundedPred.
     elim H;intros x p.
+    pose (zerop x).
+    inversion s.
     exists x.
     inversion p;auto.
     split;auto.
     intro.
-    apply  (H1 (pred x)).
+    pose (H3 1).
     omega.
+    exists x.
+    inversion p;auto.
+    split;auto.
+    intro.
+    apply  (H2 (pred x)).
+    omega.
+    intro.
+    pose (H3 k).
+    omega.
+    (* Done with (StrictlyBounded -> StrictlyBoundedPred) *)
     unfold StrictlyBoundedPred in H.
     unfold StrictlyBounded.
     elim H;intros x p.
     elim p;intros H0 H1.
     exists x.
     split;auto.
-    intros.
-    elim (eq_nat_dec x 0);intros;auto.
+    intros. 
+    elim (zerop x);intros;auto.
     omega.
-    assert ( ~ (forall k : nat, NrOfTrue k <= pred x));auto.
-    unfold not in  H3.
-    unfold not.
-    assert ((forall k : nat, NrOfTrue k <= np) ->(forall k : nat, NrOfTrue k <= pred x) );auto.
-    intros.
-    assert (NrOfTrue k <= np);auto.
+    intro.
+    apply H1.
+    intro. 
+    pose (H3 k).
+    inversion l;auto.
+    rewrite H4.
+    auto.
     omega.
   Qed.
   
@@ -456,6 +471,29 @@ Proof.
 Qed.
 Hint Resolve   inBoundedRangeDecidable.
 
+Lemma inBoundedRangeDecidableStrict (g:nat->bool)(limit:nat)(value:bool):{x | x<limit /\ g x = value} + {(forall x, x<limit -> not (g x = value))}.
+Proof.
+  pose (zerop limit).
+  inversion s.
+  right.
+  intro.
+  omega.
+  pose (inBoundedRangeDecidable g (pred limit) value) as s0.
+  inversion s0;auto.
+  left.
+  inversion H0.
+  inversion H1.
+  exists x.
+  split;auto.
+  omega.
+  right.
+  intros.
+  pose (H0 x).
+  apply n.
+  omega.
+Qed.
+Hint Resolve   inBoundedRangeDecidableStrict.
+
 
 
 Lemma NrOfTrueWithConstantNegFunction (trues lim:nat )(f : nat-> bool) :  ((NrOfTrue f lim)=trues /\ forall x, x>lim -> f x = false) -> forall y, y>lim -> (NrOfTrue f y )=trues. 
@@ -477,12 +515,15 @@ Lemma NrOfTrueWithConstantNegFunction (trues lim:nat )(f : nat-> bool) :  ((NrOf
     Qed.
 
 
+    (* Definition trueOnFirst (g:nat-> bool) (n:nat):  (bool):= *)
+    (*   if (inBoundedRangeDecidableStrict g n true ) then (g n) else false. *)
+      
+
 Fixpoint trueOnFirst (g:nat-> bool) (n:nat):  (bool):=
   match n with
     | 0 => (g 0)
     | S n =>  if (g (S n)) then if (inBoundedRangeDecidable g n true ) then false else true   else false
   end.
-
 
 Lemma nrOftrueIntrueIsLimitedByfalse(g:nat->bool): forall k, (forall x, x<=k ->  g x = false) <->  NrOfTrue  g k=0.
 Proof.
@@ -812,6 +853,11 @@ Proof.
   elim H4.
   intro.
   exists 0;auto.
+  split;auto.
+  intro.
+  pose (H5 1).
+  omega.
+  
   intro notZero.
   clear H4.
 
@@ -839,13 +885,18 @@ Proof.
   exists upperlimit.
   auto.
   intro.
-  apply notZero;auto. 
+  apply notZero;auto.
   elim H4.
   intros x H5.
   exists x.
   elim H5.
   intros.
   split;auto.
+  intro.
+  apply H7.
+  intro.
+  pose (H8 k).
+omega.  
 Qed.
 
 
